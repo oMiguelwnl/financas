@@ -1,19 +1,15 @@
 import { StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useContext } from "react";
 import SignUp from "../pages/SignUp/SignUp";
 import AuthRoutes from "./auth.routes";
+import AppRoutes from "./app.routes";
+import { AuthContext } from "../contexts/auth";
 
 function Routes() {
+  const { signed } = useContext(AuthContext);
   const loading = false;
-  const signed = false;
 
-  return signed ? (
-    <View>
-      <Text>index</Text>
-    </View>
-  ) : (
-    <AuthRoutes />
-  );
+  return signed ? <AppRoutes /> : <AuthRoutes />;
 }
 
 export default Routes;
