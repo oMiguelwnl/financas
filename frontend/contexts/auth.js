@@ -1,5 +1,5 @@
-import React, { createContext, useState } from "react";
-
+import React, { createContext, useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../services/api";
 import { useNavigation } from "@react-navigation/native";
 
@@ -8,23 +8,43 @@ export const AuthContext = createContext({});
 function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStore, setLoadingStore] = useState(true); // Começa como true
 
   const navigation = useNavigation();
+
+  useEffect(() => {
+    async function loadStore() {
+      try {
+        const storageToken = await AsyncStorage.getItem("@finToken");
+
+        if (storageToken) {
+          const response = await api.get("/me", {
+            headers: { Authorization: `Bearer ${storageToken}` },
+          });
+
+          api.defaults.headers["Authorization"] = `Bearer ${storageToken}`;
+          setUser(response.data);
+        }
+      } catch (error) {
+        console.log("Erro ao carregar usuário:", error);
+        setUser(null);
+      } finally {
+        setLoadingStore(false); // Garante que o estado seja atualizado sempre
+      }
+    }
+
+    loadStore();
+  }, []);
 
   async function signUp(email, password, name) {
     setLoading(true);
 
     try {
-      const response = await api.post("/users", {
-        name,
-        password,
-        email,
-      });
-
+      await api.post("/users", { name, password, email });
       setLoading(false);
       navigation.goBack();
     } catch (error) {
-      console.log(error);
+      console.log("Erro ao cadastrar:", error);
       setLoading(false);
     }
   }
@@ -33,47 +53,49 @@ function AuthProvider({ children }) {
     setLoading(true);
 
     try {
-      const response = await api.post("/login", {
-        email: email,
-        password: password,
-      });
+      const response = await api.post("/login", { email, password });
 
       const { id, name, token } = response.data;
 
-      const data = {
-        id,
-        name,
-        token,
-        email,
-      };
-
+      await AsyncStorage.setItem("@finToken", token);
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
 
-      setUser({
-        id,
-        name,
-        email,
-      });
+      setUser({ id, name, email });
 
       setLoading(false);
     } catch (error) {
       setLoading(false);
+      console.log("Erro no login:", error.response?.data?.error || error);
+      alert(error.response?.data?.error || "Ocorreu um erro. Tente novamente.");
+    }
+  }
 
-      if (error.response) {
-        console.log("Erro no login:", error.response.data.error);
-        alert(error.response.data.error); // Exibe o erro no app
-      } else {
-        console.log("Erro inesperado:", error);
-        alert("Ocorreu um erro. Tente novamente.");
-      }
+  async function signOut() {
+    setLoading(true);
+    try {
+      await AsyncStorage.removeItem("@finToken");
+      api.defaults.headers["Authorization"] = null;
+      setUser(null);
+    } catch (error) {
+      console.log("Erro ao sair:", error);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <AuthContext.Provider
-      value={{ signed: !!user, user, signUp, signIn, loading }}
+      value={{
+        signed: !!user,
+        user,
+        signUp,
+        signIn,
+        signOut,
+        loading,
+        loadingStore,
+      }}
     >
-      {children}
+      {!loadingStore && children}
     </AuthContext.Provider>
   );
 }
