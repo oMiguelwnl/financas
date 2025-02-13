@@ -1,29 +1,32 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { View, Text, Button } from "react-native";
 
 import { AuthContext } from "../../contexts/auth";
 
 import Header from "../../components/Header/Header";
 import { Background, ListBalance } from "./styles";
-import { format } from "date-fns";
+
 import api from "../../services/api";
+import { format } from "date-fns";
+
 import { useIsFocused } from "@react-navigation/native";
 import BalanceItem from "../../components/BalanceItem/BalanceItem";
 
 export default function Home() {
   const isFocused = useIsFocused();
   const [listBalance, setListBalance] = useState([]);
-  const [dateMoviments, setDateMoviments] = useState(new Date());
+
+  const [dateMovements, setDateMovements] = useState(new Date());
 
   useEffect(() => {
-    isActive = true;
+    let isActive = true;
 
-    async function getMoviments() {
-      let formatedDate = format(dateMoviments, "dd/MM/yyyy");
+    async function getMovements() {
+      let dateFormated = format(dateMovements, "dd/MM/yyyy");
 
       const balance = await api.get("/balance", {
         params: {
-          date: formatedDate,
+          date: dateFormated,
         },
       });
 
@@ -32,7 +35,7 @@ export default function Home() {
       }
     }
 
-    getMoviments();
+    getMovements();
 
     return () => (isActive = false);
   }, [isFocused]);
@@ -40,11 +43,12 @@ export default function Home() {
   return (
     <Background>
       <Header title="Minhas movimentações" />
+
       <ListBalance
         data={listBalance}
         horizontal={true}
         showsHorizontalScrollIndicator={false}
-        keyExtrator={(item) => item.tag}
+        keyExtractor={(item) => item.tag}
         renderItem={({ item }) => <BalanceItem data={item} />}
       />
     </Background>

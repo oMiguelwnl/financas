@@ -2,6 +2,7 @@ import React from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 
 import Home from "../pages/Home/Home";
+import Register from "../pages/Register/Register";
 
 const AppDrawer = createDrawerNavigator();
 
@@ -24,6 +25,8 @@ function AppRoutes() {
       }}
     >
       <AppDrawer.Screen name="Home" component={Home} />
+
+      <AppDrawer.Screen name="Registrar" component={Register} />
     </AppDrawer.Navigator>
   );
 }
